@@ -1,0 +1,26 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary and coverage
+*.test
+*.out
+coverage.*
+
+# SQLite / local databases
+*.db
+*.db-shm
+*.db-wal
+
+# Go workspace / env
+go.work
+go.work.sum
+.env
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
