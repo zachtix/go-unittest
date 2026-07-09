@@ -6,37 +6,51 @@ import (
 	"zachtix/hexagonal/core"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/postgres"
+	// "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func newMockGormDB(t *testing.T) (*gorm.DB, sqlmock.Sqlmock, func()) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-
-	gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a gorm database", err)
-	}
-
-	return gormDB, mock, func() { db.Close() }
-}
-
 func TestGormOrderRepository_Save(t *testing.T) {
-	gormDB, mock, cleanup := newMockGormDB(t)
-	defer cleanup()
+	sqlDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("An error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer sqlDB.Close()
 
+	mock.ExpectQuery("select sqlite_version()").
+		WillReturnRows(sqlmock.NewRows([]string{"version"}).
+			AddRow("3.31.1"))
+
+	dialector := sqlite.Dialector{Conn: sqlDB}
+	gormDB, err := gorm.Open(dialector, &gorm.Config{})
+	if err != nil {
+		t.Fatalf("Failed to open gorm database: %v", err)
+	}
 	repo := NewGormOrderRepository(gormDB)
 
-	mock.ExpectBegin()
-	mock.ExpectQuery(`^INSERT INTO "orders" (.+)$`).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectCommit()
+	t.Run("Success", func(t *testing.T) {
+		mock.ExpectBegin()
+		mock.ExpectExec("INSERT INTO").
+			WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectCommit()
 
-	err := repo.Save(&core.Order{Total: 100.0})
-	assert.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
+		err := repo.Save(&core.Order{Total: 100})
+		assert.NoError(t, err)
+
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("Failure", func(t *testing.T) {
+		mock.ExpectBegin()
+		mock.ExpectExec("INSERT INTO").
+			WillReturnError(gorm.ErrInvalidData)
+		mock.ExpectRollback()
+
+		err := repo.Save(&core.Order{Total: 100})
+		assert.Error(t, err)
+
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
 }
