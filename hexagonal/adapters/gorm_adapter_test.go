@@ -8,6 +8,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
+
 	// "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -36,7 +37,7 @@ func TestGormOrderRepository_Save(t *testing.T) {
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
-		err := repo.Save(&core.Order{Total: 100})
+		err := repo.Save(core.Order{Total: 100})
 		assert.NoError(t, err)
 
 		assert.NoError(t, mock.ExpectationsWereMet())
@@ -48,7 +49,7 @@ func TestGormOrderRepository_Save(t *testing.T) {
 			WillReturnError(gorm.ErrInvalidData)
 		mock.ExpectRollback()
 
-		err := repo.Save(&core.Order{Total: 100})
+		err := repo.Save(core.Order{Total: 100})
 		assert.Error(t, err)
 
 		assert.NoError(t, mock.ExpectationsWereMet())

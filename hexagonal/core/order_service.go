@@ -1,17 +1,26 @@
 package core
 
+import "errors"
+
 type OrderService interface {
 	CreateOrder(order Order) error
 }
 
-type orderService struct {
+type orderServiceImpl struct {
 	repo OrderRepository
 }
 
 func NewOrderService(repo OrderRepository) OrderService {
-	return &orderService{repo: repo}
+	return &orderServiceImpl{repo: repo}
 }
 
-func (s *orderService) CreateOrder(order Order) error {
-	return s.repo.Save(&order)
+func (s *orderServiceImpl) CreateOrder(order Order) error {
+	if order.Total <= 0 {
+		return errors.New("total must be positive")
+	}
+	// Business logic...
+	if err := s.repo.Save(order); err != nil {
+		return err
+	}
+	return nil
 }

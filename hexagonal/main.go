@@ -29,5 +29,6 @@ func main() {
 	// Define routes
 	app.Post("/order", orderHandler.CreateOrder)
 
+	// Start the server
 	app.Listen(":8000")
 }

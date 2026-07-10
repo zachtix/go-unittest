@@ -1,11 +1,13 @@
 package adapters
 
 import (
+	"fmt"
 	"zachtix/hexagonal/core"
 
 	"github.com/gofiber/fiber/v3"
 )
 
+// Primary adapter
 type HttpOrderHandler struct {
 	service core.OrderService
 }
@@ -17,10 +19,12 @@ func NewHttpOrderHandler(service core.OrderService) *HttpOrderHandler {
 func (h *HttpOrderHandler) CreateOrder(c fiber.Ctx) error {
 	var order core.Order
 	if err := c.Bind().Body(&order); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+		fmt.Println(err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
 
 	if err := h.service.CreateOrder(order); err != nil {
+		// Return an appropriate error message and status code
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
